@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import cv2
 import grpc
@@ -7,8 +8,10 @@ from concurrent import futures
 from typing import Dict, Iterator, List, Tuple, Optional, Any
 
 from detector import YOLOv9Detector
-import detection_pb2
-import detection_pb2_grpc
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from protos import detection_pb2
+from protos import detection_pb2_grpc
 
 # Configure logging
 logging.basicConfig(
@@ -22,33 +25,34 @@ ColorType = Tuple[int, int, int]
 DetectionType = Dict[str, Any]
 FrameType = np.ndarray
 
+
 class DetectionService:
     """Handles object detection and tracking operations."""
-    
+
     def __init__(self, model_path: str, tracker_type: str, device: str):
         """
         Initialize the detection service with model and tracking settings.
-        
+
         Args:
             model_path: Path to the YOLO model file
             tracker_type: Type of tracker to use
             device: Device to run inference on ('cuda' or 'cpu')
         """
         self.tracker = YOLOv9Detector(
-            model_path=model_path, 
-            tracker_type=tracker_type, 
+            model_path=model_path,
+            tracker_type=tracker_type,
             device=device
         )
         self.track_colors: Dict[int, ColorType] = {}
         logger.info(f"Detection service initialized on {device} with {tracker_type}")
-    
+
     def get_color(self, track_id: int) -> ColorType:
         """
         Get a consistent color for a specific track ID.
-        
+
         Args:
             track_id: Unique identifier for the tracked object
-            
+
         Returns:
             RGB color tuple
         """
@@ -59,27 +63,27 @@ class DetectionService:
                 np.random.randint(0, 255)
             )
         return self.track_colors[track_id]
-    
+
     def track_objects(self, frame: FrameType) -> List[DetectionType]:
         """
         Track objects in the given frame.
-        
+
         Args:
             frame: Input image frame
-            
+
         Returns:
             List of detection dictionaries
         """
         return self.tracker.track(frame)
-    
+
     def draw_annotations(self, frame: FrameType, detections: List[DetectionType]) -> FrameType:
         """
         Draw bounding boxes and labels on the frame.
-        
+
         Args:
             frame: Original image frame
             detections: List of detection dictionaries
-            
+
         Returns:
             Annotated frame
         """
@@ -103,15 +107,15 @@ class DetectionService:
 
 class FrameProcessor:
     """Handles frame encoding/decoding operations."""
-    
+
     @staticmethod
     def decode_frame(frame_bytes: bytes) -> Optional[FrameType]:
         """
         Decode a frame from bytes.
-        
+
         Args:
             frame_bytes: Encoded frame data
-            
+
         Returns:
             Decoded numpy array or None if decoding fails
         """
@@ -121,15 +125,15 @@ class FrameProcessor:
         except Exception as e:
             logger.error(f"Failed to decode frame: {e}")
             return None
-    
+
     @staticmethod
     def encode_frame(frame: FrameType) -> Optional[bytes]:
         """
         Encode a frame to JPEG bytes.
-        
+
         Args:
             frame: Image frame as numpy array
-            
+
         Returns:
             Encoded bytes or None if encoding fails
         """
@@ -143,13 +147,13 @@ class FrameProcessor:
 
 class DetectionServicer(detection_pb2_grpc.DetectionServiceServicer):
     """gRPC service implementation for object detection."""
-    
-    def __init__(self, model_path: str = "yolov9-c-fire.pt", 
-                 tracker_type: str = "bytetrack.yaml", 
+
+    def __init__(self, model_path: str = "yolov9-c-fire.pt",
+                 tracker_type: str = "bytetrack.yaml",
                  use_gpu: bool = True):
         """
         Initialize the gRPC servicer.
-        
+
         Args:
             model_path: Path to the model weights
             tracker_type: Type of tracker to use
@@ -163,7 +167,7 @@ class DetectionServicer(detection_pb2_grpc.DetectionServiceServicer):
         )
         self.frame_processor = FrameProcessor()
         logger.info(f"Detection servicer initialized with model: {model_path}")
-    
+
     def _is_cuda_available(self) -> bool:
         """Check if CUDA is available."""
         try:
@@ -174,15 +178,15 @@ class DetectionServicer(detection_pb2_grpc.DetectionServiceServicer):
         except Exception:
             return False
 
-    def StreamFrames(self, request_iterator: Iterator[detection_pb2.FrameRequest], 
+    def StreamFrames(self, request_iterator: Iterator[detection_pb2.FrameRequest],
                      context) -> Iterator[detection_pb2.AnnotatedResponse]:
         """
         Process a stream of frames from clients.
-        
+
         Args:
             request_iterator: Iterator of frame requests
             context: gRPC context
-            
+
         Yields:
             Annotated responses with detection results
         """
@@ -194,10 +198,10 @@ class DetectionServicer(detection_pb2_grpc.DetectionServiceServicer):
 
                 # Prepare empty response in case of failure
                 empty_response = detection_pb2.AnnotatedResponse(
-                    robot_id=robot_id, 
+                    robot_id=robot_id,
                     timestamp=timestamp
                 )
-                
+
                 # Decode the frame
                 frame = self.frame_processor.decode_frame(req.frame)
                 if frame is None:
@@ -221,7 +225,7 @@ class DetectionServicer(detection_pb2_grpc.DetectionServiceServicer):
                 # Draw annotations and encode the result
                 annotated_frame = self.detection_service.draw_annotations(frame, detections)
                 encoded_annotated_frame = self.frame_processor.encode_frame(annotated_frame)
-                
+
                 if encoded_annotated_frame is None:
                     logger.warning(f"Failed to encode annotated frame for Robot ID: {robot_id}")
                     context.set_code(grpc.StatusCode.INTERNAL)
@@ -256,7 +260,7 @@ class DetectionServicer(detection_pb2_grpc.DetectionServiceServicer):
                 context.set_code(grpc.StatusCode.INTERNAL)
                 context.set_details(f"Server error: {str(e)}")
                 yield detection_pb2.AnnotatedResponse(
-                    robot_id=getattr(req, 'robot_id', 0), 
+                    robot_id=getattr(req, 'robot_id', 0),
                     timestamp=getattr(req, 'timestamp', 0)
                 )
 
@@ -264,7 +268,7 @@ class DetectionServicer(detection_pb2_grpc.DetectionServiceServicer):
 def get_server_config() -> Dict[str, Any]:
     """
     Get server configuration from environment variables with defaults.
-    
+
     Returns:
         Dictionary of configuration values
     """
@@ -272,7 +276,7 @@ def get_server_config() -> Dict[str, Any]:
         "host": os.getenv("YOLO_SERVER_HOST", "[::]"),
         "port": int(os.getenv("YOLO_SERVER_PORT", "50051")),
         "max_workers": int(os.getenv("YOLO_MAX_WORKERS", "10")),
-        "model_path": os.getenv("YOLO_MODEL_PATH", "yolo11n.pt"),
+        "model_path": os.getenv("YOLO_MODEL_PATH", "../yolo11n.pt"),
         "tracker_type": os.getenv("YOLO_TRACKER_TYPE", "bytetrack.yaml"),
         "use_gpu": os.getenv("YOLO_USE_GPU", "1") == "1",
     }
@@ -281,7 +285,7 @@ def get_server_config() -> Dict[str, Any]:
 def serve() -> None:
     """Start the gRPC server and wait for termination."""
     config = get_server_config()
-    
+
     logger.info(f"Starting gRPC server on {config['host']}:{config['port']}")
     logger.info(f"Configuration: {config}")
 
@@ -292,7 +296,7 @@ def serve() -> None:
             ('grpc.max_receive_message_length', 50 * 1024 * 1024),  # 50 MB
         ]
     )
-    
+
     detection_servicer = DetectionServicer(
         model_path=config['model_path'],
         tracker_type=config['tracker_type'],
@@ -301,7 +305,7 @@ def serve() -> None:
 
     detection_pb2_grpc.add_DetectionServiceServicer_to_server(detection_servicer, server)
     server.add_insecure_port(f"{config['host']}:{config['port']}")
-    
+
     try:
         server.start()
         logger.info("Server started and listening")

@@ -1,7 +1,7 @@
-final_grpc_client_server/custom_model/dataset
-final_grpc_client_server/custom_model/runs/detect/train3/weights
-final_grpc_client_server/custom_model/yolo11n.pt
-final_grpc_client_server/custom_model/yolo11s.pt
+custom_model/dataset
+custom_model/runs/detect/train3/weights
+custom_model/yolo11n.pt
+custom_model/yolo11s.pt
 final_grpc_client_server/server/server/yolo11n.pt
 final_grpc_client_server/server/yolo11n.pt
 final_grpc_client_server/server/best.pt

@@ -25,9 +25,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("tracking-client")
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Add proto paths
-import detection_pb2
-import detection_pb2_grpc
+from protos import detection_pb2, detection_pb2_grpc
 
 # Type definitions
 FrameType = np.ndarray

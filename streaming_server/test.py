@@ -1,5 +1,5 @@
 # test_proto_check.py
-import detection_pb2
+from streaming_server.protos import detection_pb2
 
 # Instantiate a test FrameRequest
 req = detection_pb2.FrameRequest(

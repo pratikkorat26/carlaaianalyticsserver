@@ -112,6 +112,6 @@ if __name__ == "__main__":
         host=os.getenv("YOLO_SERVER_HOST", "[::]"),
         port=int(os.getenv("YOLO_SERVER_PORT", "50051")),
         max_workers=int(os.getenv("YOLO_MAX_WORKERS", "10")),
-        model_path=os.getenv("YOLO_MODEL_PATH", "server/best.pt"),
+        model_path=os.getenv("YOLO_MODEL_PATH", "best.pt"),
         use_gpu=os.getenv("YOLO_USE_GPU", "1") == "1"
     )
