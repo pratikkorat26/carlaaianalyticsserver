@@ -82,7 +82,14 @@
     cd streaming_server/client
     python client.py    # this will start the client and send image frames to the server
     ```
-   
+
+## Demo Video
+[🎬 Watch demo video](final_grpc_client_server/runs/detect/track/fire.avi)
+
+## Project Usage in Smart Service Robotics
+🎬 [Click here to watch the demo video](https://drive.google.com/file/d/1dm0nJ98SiEqPeWSy23r79BGWBHOvz_vN/view?usp=sharing)
+
+
 ## Contact Information
 For any questions or issues, please contact:
 - **Pratik Korat**
