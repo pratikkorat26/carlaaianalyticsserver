@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package detection;
+
+service DetectionService {
+  rpc StreamFrames (stream FrameRequest) returns (stream AnnotatedResponse);
+}
+
+message FrameRequest {
+  string robot_id = 1;
+  int64 timestamp = 2;
+  bytes frame = 3;
+}
+
+message TrackedObject {
+  string label = 1;
+  float confidence = 2;
+  float x1 = 3;
+  float y1 = 4;
+  float x2 = 5;
+  float y2 = 6;
+  int32 track_id = 7;
+}
+
+message AnnotatedResponse {
+  string robot_id = 1;
+  int64 timestamp = 2;
+  bytes annotated_frame = 3;
+  repeated TrackedObject objects = 4;
+}

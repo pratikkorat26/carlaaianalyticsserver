@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package detection;
+
+service DetectionService {
+  rpc StreamFrames (stream FrameRequest) returns (stream DetectionResponse);
+}
+
+message FrameRequest {
+  string robot_id = 1;       // Unique identifier for the robot
+  int64 timestamp = 2;       // Epoch timestamp in milliseconds
+  bytes frame = 3;           // Raw image frame in bytes (e.g., JPEG encoded)
+}
+
+message DetectionBox {
+  string label = 1;
+  float confidence = 2;
+  float x1 = 3;
+  float y1 = 4;
+  float x2 = 5;
+  float y2 = 6;
+}
+
+message DetectionResponse {
+  string robot_id = 1;       // Echoed back for reference
+  int64 timestamp = 2;       // Timestamp matching the frame
+  repeated DetectionBox boxes = 3;
+}
